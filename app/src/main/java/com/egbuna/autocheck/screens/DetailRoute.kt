@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,12 +39,10 @@ import com.egbuna.autocheck.state.CarUiState
 import com.egbuna.autocheck.ui.CarViewModel
 import com.egbuna.autocheck.ui.components.Toolbar
 import com.egbuna.autocheck.ui.components.VideoPlayer
-import com.egbuna.autocheck.util.IMAGE_MEDIA_TYPE
-import com.egbuna.autocheck.util.WEBP_MEDIA_TYPE
-import com.egbuna.autocheck.util.getDecoratedStringFromNumber
-import com.egbuna.autocheck.util.roundDown
+import com.egbuna.autocheck.util.*
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
+import com.google.accompanist.pager.rememberPagerState
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalPagerApi::class)
@@ -57,8 +56,28 @@ fun CarDetailRoute(
 
     viewModel.getCarDetails(id)
     viewModel.getCarMedia(id)
-    val state = viewModel.carDetailModel.collectAsState()
-    val carMediaState = viewModel.carMedia.collectAsState()
+    val state by viewModel.carDetailModel.collectAsState()
+    val carMediaState by viewModel.carMedia.collectAsState()
+
+    CarDetailScreen(carName = carName,
+        carMediaState = carMediaState,
+        carUiState = state,
+        onBackClicked = {
+            navController.navigateUp()
+        }
+    )
+}
+
+@OptIn(ExperimentalPagerApi::class)
+@Composable
+fun CarDetailScreen(
+    carName: String,
+    carMediaState: CarUiState,
+    carUiState: CarUiState,
+    onBackClicked: () -> Unit
+) {
+
+    val pagerState = rememberPagerState()
 
     Column(
         modifier = Modifier.verticalScroll(rememberScrollState())
@@ -69,32 +88,41 @@ fun CarDetailRoute(
             count = 0,
             title = carName,
             onBackClicked = {
-                navController.navigateUp()
+                onBackClicked()
             }
         )
 
-        if (carMediaState.value is CarUiState.Success) {
-            val carMediaImages = (carMediaState.value as CarUiState.Success).carMedia
-            HorizontalPager(count = carMediaImages?.size ?: 0) { page ->
-                val type = carMediaImages?.get(page)?.type
-                if (type == IMAGE_MEDIA_TYPE || type == WEBP_MEDIA_TYPE) {
-                    AsyncImage(
-                        model = carMediaImages.get(page)?.url, contentDescription = null,
-                        contentScale = ContentScale.FillBounds,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
-                    )
-                } else {
-                    VideoPlayer(uri = Uri.parse(carMediaImages?.get(page)?.url))
+        if (carMediaState is CarUiState.Success) {
+            val carMediaImages = carMediaState.carMedia
+            Box(modifier = Modifier.height(250.dp)) {
+                HorizontalPager(count = carMediaImages?.size ?: 0,
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize()) { page ->
+                    val type = carMediaImages?.get(page)?.type
+                    if (MediaImageTags.contains(type)) {
+                        AsyncImage(
+                            model = carMediaImages?.get(page)?.url,
+                            contentDescription = null,
+                            contentScale = ContentScale.FillBounds,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(250.dp)
+                        )
+                    } else {
+                        VideoPlayer(uri = Uri.parse(carMediaImages?.get(page)?.url))
+                    }
                 }
+                MediaCounter(currentCount = pagerState.currentPage + 1,
+                    mediaSize = carMediaImages?.size ?: 0,
+                    modifier = Modifier.align(Alignment.TopEnd)
+                )
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        if (state.value is CarUiState.Success) {
-            val car = (state.value as CarUiState.Success).carDetail
+        if (carUiState is CarUiState.Success) {
+            val car = carUiState.carDetail
             CarDetailItem(
                 carYear = car?.year ?: 0,
                 carAmount = car?.marketplacePrice ?: 0,
@@ -361,4 +389,29 @@ fun IconText(icon: Painter,
 @Composable
 fun IconTextPreview() {
     IconText(icon = painterResource(id = R.drawable.ic_baseline_miliage_24), text = "1000km")
+}
+
+@Composable
+fun MediaCounter(
+    currentCount: Int,
+    mediaSize: Int,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .background(color = Color.Gray)
+    ) {
+        Text(text = "$currentCount of $mediaSize",
+        modifier = Modifier.padding(8.dp))
+    }
+}
+
+@Preview(
+    showBackground = true,
+    name = "media count",
+    device = "spec:shape=Normal,width=360,height=640,unit=dp,dpi=480"
+)
+@Composable
+fun MediaCountPreview() {
+    MediaCounter(currentCount = 2, mediaSize = 16)
 }

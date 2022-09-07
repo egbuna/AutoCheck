@@ -28,3 +28,6 @@ fun Double.roundDown(): String {
 
 const val IMAGE_MEDIA_TYPE = "image/jpeg"
 const val WEBP_MEDIA_TYPE = "image/webp"
+const val IMAGE = "IMAGE"
+
+val MediaImageTags = listOf("image", "image/jpeg", "image/webp")

@@ -11,9 +11,7 @@ import com.egbuna.autocheck.repository.CarModelRepository
 import com.egbuna.autocheck.state.CarUiState
 import com.egbuna.autocheck.state.FetchCarUIState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -22,8 +20,12 @@ class CarViewModel @Inject constructor(
     private val topCarModelRepository: CarModelRepository
 ) : ViewModel() {
 
-    private val _topCarModel: MutableStateFlow<CarUiState> = MutableStateFlow(value = CarUiState.Loading)
-    val topCarModel: StateFlow<CarUiState> = _topCarModel.asStateFlow()
+    val topCarModel =
+        topCarModelRepository.fetchTopCars().stateIn(
+            viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = CarUiState.Loading
+        )
 
     private val _carDetailModel: MutableStateFlow<CarUiState> = MutableStateFlow(value = CarUiState.Loading)
     val carDetailModel: StateFlow<CarUiState> = _carDetailModel.asStateFlow()
@@ -60,15 +62,6 @@ class CarViewModel @Inject constructor(
     fun loadNextItems() {
         viewModelScope.launch {
             paginator.loadNextItem()
-        }
-    }
-
-
-    fun getTopCarModels() {
-        viewModelScope.launch {
-            topCarModelRepository.fetchTopCars().collect {
-                _topCarModel.value = it
-            }
         }
     }
 

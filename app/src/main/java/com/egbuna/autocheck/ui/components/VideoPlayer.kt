@@ -6,6 +6,7 @@ import androidx.appcompat.widget.ListPopupWindow.MATCH_PARENT
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.C
@@ -20,7 +21,7 @@ import androidx.media3.ui.PlayerView
 
 @Composable
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
-fun VideoPlayer(uri: Uri) {
+fun VideoPlayer(uri: Uri, modifier: Modifier = Modifier) {
     val context = LocalContext.current
 
     val exoPlayer = remember {

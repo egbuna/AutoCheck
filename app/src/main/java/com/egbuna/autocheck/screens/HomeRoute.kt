@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,13 +58,25 @@ fun HomeRoute(
     viewModel: CarViewModel = hiltViewModel()
 ) {
     LaunchedEffect(key1 = 1) {
-        viewModel.getTopCarModels()
         viewModel.loadNextItems()
     }
 
-    val state = viewModel.topCarModel.collectAsState()
+    val state by viewModel.topCarModel.collectAsState()
     val carMainState = viewModel.state
+    HomeScreen(carUiState = state, carMainState = carMainState, loadNextItems = {
+        viewModel.loadNextItems()
+    }, navigateToDetailScreen = {id, carName ->
+        navController.navigate(Screen.Detail.route + "/$id/$carName")
+    })
+}
 
+@Composable
+fun HomeScreen(
+    carUiState: CarUiState,
+    carMainState: FetchCarUIState,
+    loadNextItems: () -> Unit,
+    navigateToDetailScreen:(id: String, name: String) -> Unit
+) {
     Column(
     ) {
         Toolbar(
@@ -87,16 +100,16 @@ fun HomeRoute(
             horizontalArrangement = Arrangement.spacedBy(20.dp),
             content = {
                 TopCarModels(
-                    state.value
+                    carUiState
                 )
             })
         Spacer(modifier = Modifier.height(16.dp))
 
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), content = {
             GetCars(carMainState, loadNextItems = {
-                viewModel.loadNextItems()
+                loadNextItems.invoke()
             }) { id, carName ->
-                navController.navigate(Screen.Detail.route + "/$id/$carName")
+                navigateToDetailScreen(id, carName)
             }
         })
     }
